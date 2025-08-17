@@ -17,5 +17,8 @@ public class CaseController {
         return ok(new ExampleCase(1, "ABC12345", "Case Title",
                                   "Case Description", "Case Status", LocalDateTime.now()
         ));
+
+
+        
     }
 }
