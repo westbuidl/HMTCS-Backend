@@ -1,4 +1,3 @@
-//RootController.java
 package uk.gov.hmcts.reform.dev.controllers;
 
 import org.springframework.http.ResponseEntity;

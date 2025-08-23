@@ -1,4 +1,3 @@
-//CaseController.java
 package uk.gov.hmcts.reform.dev.controllers;
 
 import org.springframework.http.ResponseEntity;
@@ -18,5 +17,8 @@ public class CaseController {
         return ok(new ExampleCase(1, "ABC12345", "Case Title",
                                   "Case Description", "Case Status", LocalDateTime.now()
         ));
+
+
+        
     }
 }
