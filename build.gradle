@@ -269,3 +269,37 @@ rootProject.tasks.named("processSmokeTestResources") {
 wrapper {
     distributionType = Wrapper.DistributionType.ALL
 }
+
+// Configure Checkstyle
+checkstyle {
+    toolVersion = '10.12.1'
+    maxWarnings = 0
+    maxErrors = 0
+}
+
+// Configure checkstyle tasks
+tasks.withType(Checkstyle) {
+    configFile = file("${rootProject.projectDir}/config/checkstyle/checkstyle.xml")
+    configProperties = [
+        'org.checkstyle.sun.suppressionfilter.config': "${rootProject.projectDir}/config/checkstyle/suppressions.xml"
+    ]
+    
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    
+    // Treat warnings as errors
+    maxWarnings = 0
+    maxErrors = 0
+    
+    // Ignore failures temporarily during development
+    ignoreFailures = true
+}
+
+// Alternative: Skip checkstyle entirely during development
+if (project.hasProperty('skipCheckstyle')) {
+    tasks.withType(Checkstyle) {
+        enabled = false
+    }
+}

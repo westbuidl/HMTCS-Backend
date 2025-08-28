@@ -1,12 +1,45 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
-  <!--Please add all the false positives under the below section-->
-  <suppress>
-    <notes>False Positive
-      <![CDATA[file name: jackson-databind-2.15.2.jar]]>
-    </notes>
-    <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.core/jackson\-databind@.*$</packageUrl>
-    <cve>CVE-2023-35116</cve>
-  </suppress>
-  <!--End of false positives section -->
+<?xml version="1.0"?>
+<!DOCTYPE suppressions PUBLIC
+    "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
+    "https://checkstyle.org/dtds/suppressions_1_2.dtd">
+
+<suppressions>
+    <!-- Suppress specific checks for generated or external code -->
+    <suppress checks=".*" files="Application\.java"/>
+    
+    <!-- Suppress line length for imports and long URLs -->
+    <suppress checks="LineLength" files=".*\.java" lines="1-20"/>
+    
+    <!-- Suppress magic number warnings for test classes -->
+    <suppress checks="MagicNumber" files=".*Test\.java"/>
+    <suppress checks="MagicNumber" files=".*IT\.java"/>
+    
+    <!-- Suppress Javadoc requirements for test classes -->
+    <suppress checks="JavadocMethod" files=".*Test\.java"/>
+    <suppress checks="JavadocType" files=".*Test\.java"/>
+    <suppress checks="JavadocVariable" files=".*Test\.java"/>
+    
+    <!-- Suppress complexity checks for test setup methods -->
+    <suppress checks="MethodLength" files=".*Test\.java"/>
+    <suppress checks="ClassFanOutComplexity" files=".*Test\.java"/>
+    
+    <!-- Allow multiple string literals in test classes -->
+    <suppress checks="MultipleStringLiterals" files=".*Test\.java"/>
+    
+    <!-- Allow unused imports in test resources -->
+    <suppress checks="UnusedImports" files=".*Test\.java"/>
+    
+    <!-- Suppress utility class constructor warnings for Spring Boot main classes -->
+    <suppress checks="HideUtilityClassConstructor" files="Application\.java"/>
+    
+    <!-- Suppress design issues for model classes -->
+    <suppress checks="VisibilityModifier" files=".*models/.*\.java"/>
+    <suppress checks="FinalClass" files=".*models/.*\.java"/>
+    
+    <!-- Suppress specific issues for entity classes -->
+    <suppress checks="VisibilityModifier" files=".*entities/.*\.java"/>
+    <suppress checks="FinalClass" files=".*entities/.*\.java"/>
+    
+    <!-- Allow long parameter lists in constructors -->
+    <suppress checks="ParameterNumber" files=".*\.java"/>
 </suppressions>

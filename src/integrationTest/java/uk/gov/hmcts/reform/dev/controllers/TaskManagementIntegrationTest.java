@@ -6,10 +6,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,12 +37,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebMvc
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
     "spring.datasource.url=jdbc:h2:mem:testdb-integration;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
     "spring.jpa.hibernate.ddl-auto=create-drop",
-    "spring.jpa.show-sql=true",
-    "logging.level.org.hibernate.SQL=DEBUG"
+    "spring.jpa.show-sql=false",
+    "logging.level.org.hibernate.SQL=ERROR",
+    "logging.level.org.hibernate.type.descriptor.sql.BasicBinder=ERROR"
 })
 @Transactional
 @DisplayName("Task Management Integration Tests")
@@ -111,13 +114,13 @@ class TaskManagementIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should get all tasks including sample data")
-    void shouldGetAllTasksIncludingSampleData() throws Exception {
+    @DisplayName("Should get all tasks")
+    void shouldGetAllTasks() throws Exception {
         // When & Then
         mockMvc.perform(get("/api/tasks"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(0)))) // No assumption about sample data
+                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(0))))
                 .andExpect(jsonPath("$", isA(java.util.List.class)));
     }
 
