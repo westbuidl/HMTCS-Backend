@@ -11,12 +11,14 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import uk.gov.hmcts.reform.dev.models.TaskStatus;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 @Entity
 @Table(name = "tasks")
@@ -24,10 +26,12 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Getter
 @Setter
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)  // Only include ID for equals/hashCode
 public class TaskEntity {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include  // Only use ID for equals/hashCode
     private Long id;
     
     @Column(nullable = false, length = 255)
@@ -72,5 +76,35 @@ public class TaskEntity {
     @PreUpdate
     protected void onUpdate() {
         updatedDate = LocalDateTime.now();
+    }
+    
+    // Custom equals method for testing - compare by content when ID is null
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        
+        TaskEntity other = (TaskEntity) obj;
+        
+        // If both have IDs, compare by ID only
+        if (this.id != null && other.id != null) {
+            return Objects.equals(this.id, other.id);
+        }
+        
+        // If no IDs (new entities), compare by content
+        return Objects.equals(this.title, other.title) &&
+               Objects.equals(this.description, other.description) &&
+               Objects.equals(this.status, other.status) &&
+               Objects.equals(this.dueDate, other.dueDate);
+    }
+    
+    @Override
+    public int hashCode() {
+        // If entity has ID, use ID for hash
+        if (id != null) {
+            return Objects.hash(id);
+        }
+        // Otherwise use content for hash
+        return Objects.hash(title, description, status, dueDate);
     }
 }
