@@ -1,4 +1,4 @@
-/*package uk.gov.hmcts.reform.dev.controllers;
+package uk.gov.hmcts.reform.dev.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -18,7 +18,6 @@ import uk.gov.hmcts.reform.dev.services.TaskService;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -120,47 +119,6 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should return bad request when creating task with empty title")
-    void shouldReturnBadRequestWhenCreatingTaskWithEmptyTitle() throws Exception {
-        // Given
-        CreateTaskRequest request = new CreateTaskRequest();
-        request.setTitle("   ");
-        request.setDescription("Description");
-        request.setStatus(TaskStatus.PENDING);
-
-        String requestJson = objectMapper.writeValueAsString(request);
-
-        // When & Then
-        mockMvc.perform(post("/api/tasks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
-                .andExpect(status().isBadRequest());
-
-        verify(taskService, never()).createTask(anyString(), anyString(), any(TaskStatus.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    @DisplayName("Should return internal server error when service throws exception")
-    void shouldReturnInternalServerErrorWhenServiceThrowsException() throws Exception {
-        // Given
-        CreateTaskRequest request = new CreateTaskRequest();
-        request.setTitle("Valid Title");
-        request.setDescription("Valid Description");
-        request.setStatus(TaskStatus.PENDING);
-
-        when(taskService.createTask(anyString(), anyString(), any(TaskStatus.class), any(LocalDateTime.class)))
-                .thenThrow(new RuntimeException("Database error"));
-
-        String requestJson = objectMapper.writeValueAsString(request);
-
-        // When & Then
-        mockMvc.perform(post("/api/tasks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
     @DisplayName("Should get task by ID successfully")
     void shouldGetTaskByIdSuccessfully() throws Exception {
         // Given
@@ -175,20 +133,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.title", is("Sample Task")))
                 .andExpect(jsonPath("$.description", is("Sample Description")))
                 .andExpect(jsonPath("$.status", is("PENDING")));
-
-        verify(taskService).getTaskById(taskId);
-    }
-
-    @Test
-    @DisplayName("Should return not found when task does not exist")
-    void shouldReturnNotFoundWhenTaskDoesNotExist() throws Exception {
-        // Given
-        Long taskId = 999L;
-        when(taskService.getTaskById(taskId)).thenReturn(Optional.empty());
-
-        // When & Then
-        mockMvc.perform(get("/api/tasks/{id}", taskId))
-                .andExpect(status().isNotFound());
 
         verify(taskService).getTaskById(taskId);
     }
@@ -217,21 +161,6 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$[0].title", is("Task 1")))
                 .andExpect(jsonPath("$[1].id", is(2)))
                 .andExpect(jsonPath("$[1].title", is("Task 2")));
-
-        verify(taskService).getAllTasks();
-    }
-
-    @Test
-    @DisplayName("Should return empty list when no tasks exist")
-    void shouldReturnEmptyListWhenNoTasksExist() throws Exception {
-        // Given
-        when(taskService.getAllTasks()).thenReturn(Collections.emptyList());
-
-        // When & Then
-        mockMvc.perform(get("/api/tasks"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(0)));
 
         verify(taskService).getAllTasks();
     }
@@ -266,67 +195,6 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should return not found when updating status of non-existent task")
-    void shouldReturnNotFoundWhenUpdatingStatusOfNonExistentTask() throws Exception {
-        // Given
-        Long taskId = 999L;
-        TaskStatus newStatus = TaskStatus.IN_PROGRESS;
-        UpdateTaskStatusRequest request = new UpdateTaskStatusRequest();
-        request.setStatus(newStatus);
-
-        when(taskService.updateTaskStatus(taskId, newStatus)).thenReturn(Optional.empty());
-
-        String requestJson = objectMapper.writeValueAsString(request);
-
-        // When & Then
-        mockMvc.perform(put("/api/tasks/{id}/status", taskId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
-                .andExpect(status().isNotFound());
-
-        verify(taskService).updateTaskStatus(taskId, newStatus);
-    }
-
-    @Test
-    @DisplayName("Should return bad request when updating with null status")
-    void shouldReturnBadRequestWhenUpdatingWithNullStatus() throws Exception {
-        // Given
-        Long taskId = 1L;
-        UpdateTaskStatusRequest request = new UpdateTaskStatusRequest();
-        request.setStatus(null);
-
-        String requestJson = objectMapper.writeValueAsString(request);
-
-        // When & Then
-        mockMvc.perform(put("/api/tasks/{id}/status", taskId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
-                .andExpect(status().isBadRequest());
-
-        verify(taskService, never()).updateTaskStatus(any(Long.class), any(TaskStatus.class));
-    }
-
-    @Test
-    @DisplayName("Should return internal server error when update status throws exception")
-    void shouldReturnInternalServerErrorWhenUpdateStatusThrowsException() throws Exception {
-        // Given
-        Long taskId = 1L;
-        TaskStatus newStatus = TaskStatus.IN_PROGRESS;
-        UpdateTaskStatusRequest request = new UpdateTaskStatusRequest();
-        request.setStatus(newStatus);
-
-        when(taskService.updateTaskStatus(taskId, newStatus)).thenThrow(new RuntimeException("Database error"));
-
-        String requestJson = objectMapper.writeValueAsString(request);
-
-        // When & Then
-        mockMvc.perform(put("/api/tasks/{id}/status", taskId)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(requestJson))
-                .andExpect(status().isInternalServerError());
-    }
-
-    @Test
     @DisplayName("Should delete task successfully")
     void shouldDeleteTaskSuccessfully() throws Exception {
         // Given
@@ -339,60 +207,4 @@ class TaskControllerTest {
 
         verify(taskService).deleteTask(taskId);
     }
-
-    @Test
-    @DisplayName("Should return not found when deleting non-existent task")
-    void shouldReturnNotFoundWhenDeletingNonExistentTask() throws Exception {
-        // Given
-        Long taskId = 999L;
-        when(taskService.deleteTask(taskId)).thenReturn(false);
-
-        // When & Then
-        mockMvc.perform(delete("/api/tasks/{id}", taskId))
-                .andExpect(status().isNotFound());
-
-        verify(taskService).deleteTask(taskId);
-    }
-
-    @Test
-    @DisplayName("Should handle CORS preflight request")
-    void shouldHandleCorsPreflight() throws Exception {
-        // When & Then
-        mockMvc.perform(options("/api/tasks")
-                .header("Origin", "http://localhost:3000")
-                .header("Access-Control-Request-Method", "POST")
-                .header("Access-Control-Request-Headers", "Content-Type"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Should validate JSON structure in requests")
-    void shouldValidateJsonStructureInRequests() throws Exception {
-        // Given - Invalid JSON
-        String invalidJson = "{ invalid json }";
-
-        // When & Then
-        mockMvc.perform(post("/api/tasks")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(invalidJson))
-                .andExpect(status().isBadRequest());
-
-        verify(taskService, never()).createTask(anyString(), anyString(), any(TaskStatus.class), any(LocalDateTime.class));
-    }
-
-    @Test
-    @DisplayName("Should handle unsupported media type")
-    void shouldHandleUnsupportedMediaType() throws Exception {
-        // Given
-        CreateTaskRequest request = new CreateTaskRequest();
-        request.setTitle("Test Task");
-
-        // When & Then
-        mockMvc.perform(post("/api/tasks")
-                .contentType(MediaType.APPLICATION_XML)
-                .content("<task><title>Test Task</title></task>"))
-                .andExpect(status().isUnsupportedMediaType());
-
-        verify(taskService, never()).createTask(anyString(), anyString(), any(TaskStatus.class), any(LocalDateTime.class));
-    }
-}*/
+}

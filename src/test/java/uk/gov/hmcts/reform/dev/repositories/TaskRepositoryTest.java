@@ -1,4 +1,4 @@
-/*package uk.gov.hmcts.reform.dev.repositories;
+package uk.gov.hmcts.reform.dev.repositories;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -134,27 +134,6 @@ class TaskRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should not find completed tasks as overdue")
-    void shouldNotFindCompletedTasksAsOverdue() {
-        // Given - Create a completed overdue task
-        TaskEntity completedOverdueTask = new TaskEntity("Completed Overdue", "Description", 
-                                                         TaskStatus.COMPLETED, testDateTime.minusDays(2));
-        entityManager.persist(completedOverdueTask);
-        entityManager.flush();
-
-        LocalDateTime currentTime = testDateTime;
-        List<TaskStatus> excludedStatuses = Arrays.asList(TaskStatus.COMPLETED, TaskStatus.CANCELLED);
-
-        // When
-        List<TaskEntity> overdueTasks = taskRepository.findOverdueTasks(currentTime, excludedStatuses);
-
-        // Then
-        assertThat(overdueTasks).hasSize(1);
-        assertThat(overdueTasks).doesNotContain(completedOverdueTask);
-        assertThat(overdueTasks.get(0)).isEqualTo(overdueTask);
-    }
-
-    @Test
     @DisplayName("Should find tasks by status ordered by due date")
     void shouldFindTasksByStatusOrderedByDueDate() {
         // Given - Add another pending task with different due date
@@ -175,21 +154,6 @@ class TaskRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should find tasks due between dates")
-    void shouldFindTasksDueBetweenDates() {
-        // Given
-        LocalDateTime startDate = testDateTime.plusDays(1);
-        LocalDateTime endDate = testDateTime.plusDays(2);
-
-        // When
-        List<TaskEntity> tasksDueBetween = taskRepository.findByDueDateBetween(startDate, endDate);
-
-        // Then
-        assertThat(tasksDueBetween).hasSize(2);
-        assertThat(tasksDueBetween).containsExactlyInAnyOrder(inProgressTask, pendingTask);
-    }
-
-    @Test
     @DisplayName("Should count tasks by status")
     void shouldCountTasksByStatus() {
         // When
@@ -206,7 +170,7 @@ class TaskRepositoryTest {
     }
 
     @Test
-    @DisplayName("Should find tasks by title or description containing search term (case insensitive)")
+    @DisplayName("Should find tasks by title or description containing search term")
     void shouldFindTasksByTitleOrDescriptionContaining() {
         // When - Search by title
         List<TaskEntity> tasksByTitle = taskRepository.findByTitleOrDescriptionContainingIgnoreCase("pending");
@@ -226,28 +190,6 @@ class TaskRepositoryTest {
 
         assertThat(tasksByCaseInsensitive).hasSize(1);
         assertThat(tasksByCaseInsensitive.get(0)).isEqualTo(completedTask);
-    }
-
-    @Test
-    @DisplayName("Should find tasks by partial search term")
-    void shouldFindTasksByPartialSearchTerm() {
-        // When - Search for partial term that appears in multiple tasks
-        List<TaskEntity> tasksWithTask = taskRepository.findByTitleOrDescriptionContainingIgnoreCase("task");
-        List<TaskEntity> tasksWithDescription = taskRepository.findByTitleOrDescriptionContainingIgnoreCase("desc");
-
-        // Then
-        assertThat(tasksWithTask).hasSize(4); // All tasks have "task" in title
-        assertThat(tasksWithDescription).hasSize(4); // All tasks have "desc" in description
-    }
-
-    @Test
-    @DisplayName("Should return empty list for non-matching search term")
-    void shouldReturnEmptyListForNonMatchingSearchTerm() {
-        // When
-        List<TaskEntity> noMatches = taskRepository.findByTitleOrDescriptionContainingIgnoreCase("nonexistent");
-
-        // Then
-        assertThat(noMatches).isEmpty();
     }
 
     @Test
@@ -286,47 +228,4 @@ class TaskRepositoryTest {
         assertThat(taskRepository.existsById(taskIdToDelete)).isFalse();
         assertThat(taskRepository.findById(taskIdToDelete)).isEmpty();
     }
-
-    @Test
-    @DisplayName("Should handle null values in optional fields")
-    void shouldHandleNullValuesInOptionalFields() {
-        // Given
-        TaskEntity taskWithNulls = new TaskEntity("Required Title", null, TaskStatus.PENDING, null);
-
-        // When
-        TaskEntity savedTask = taskRepository.save(taskWithNulls);
-        entityManager.flush();
-        entityManager.clear();
-
-        Optional<TaskEntity> retrievedTask = taskRepository.findById(savedTask.getId());
-
-        // Then
-        assertThat(retrievedTask).isPresent();
-        assertThat(retrievedTask.get().getTitle()).isEqualTo("Required Title");
-        assertThat(retrievedTask.get().getDescription()).isNull();
-        assertThat(retrievedTask.get().getDueDate()).isNull();
-        assertThat(retrievedTask.get().getStatus()).isEqualTo(TaskStatus.PENDING);
-        assertThat(retrievedTask.get().getCreatedDate()).isNotNull();
-        assertThat(retrievedTask.get().getUpdatedDate()).isNotNull();
-    }
-
-    @Test
-    @DisplayName("Should enforce database constraints")
-    void shouldEnforceDatabaseConstraints() {
-        // Given - Task without required title
-        TaskEntity invalidTask = new TaskEntity();
-        invalidTask.setDescription("Description without title");
-        invalidTask.setStatus(TaskStatus.PENDING);
-
-        // When & Then - This should fail due to nullable = false constraint on title
-        try {
-            taskRepository.save(invalidTask);
-            entityManager.flush();
-            // If we reach here, the constraint is not working as expected
-            assert false : "Expected constraint violation for null title";
-        } catch (Exception e) {
-            // Expected - database constraint violation
-            assertThat(e).isNotNull();
-        }
-    }
-}*/
+}

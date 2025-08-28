@@ -72,12 +72,18 @@ tasks.withType(Test) {
     useJUnitPlatform()
 
     testLogging {
+        events "passed", "skipped", "failed"
         exceptionFormat = 'full'
+        showStandardStreams = false
     }
+    
+    // Enhanced test configuration - only add if not causing issues
+    systemProperty 'spring.profiles.active', 'test'
 }
 
 test {
-    failFast = true
+    failFast = false  // Changed to false to see all test failures
+    finalizedBy jacocoTestReport
 }
 
 task functional(type: Test) {
@@ -92,7 +98,7 @@ task integration(type: Test) {
     group = "Verification"
     testClassesDirs = sourceSets.integrationTest.output.classesDirs
     classpath = sourceSets.integrationTest.runtimeClasspath
-    failFast = true
+    failFast = false  // Changed to false to see all test failures
 }
 
 task smoke(type: Test) {
@@ -101,12 +107,23 @@ task smoke(type: Test) {
     classpath = sourceSets.smokeTest.runtimeClasspath
 }
 
+// Enhanced Jacoco configuration
 jacocoTestReport {
     executionData(test, integration)
     reports {
         xml.required = true
         csv.required = false
         html.required = true
+        html.outputLocation = layout.buildDirectory.dir('jacocoHtml')
+    }
+    
+    // Exclude certain classes from coverage if needed
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                '**/*Application*'
+            ])
+        }))
     }
 }
 
@@ -117,6 +134,7 @@ sonarqube {
     properties {
         property "sonar.projectName", "Reform :: test-backend"
         property "sonar.projectKey", "uk.gov.hmcts.reform:test-backend"
+        property "sonar.coverage.jacoco.xmlReportPaths", "${buildDir}/reports/jacoco/test/jacocoTestReport.xml"
     }
 }
 
@@ -151,32 +169,49 @@ ext {
 ext['snakeyaml.version'] = '2.2'
 
 dependencies {
+    // Core Spring Boot dependencies (existing)
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-web'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-actuator'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-aop'
     implementation group: 'org.springframework.boot', name: 'spring-boot-starter-json'
-    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa' // Added for JPA
-    runtimeOnly group: 'com.h2database', name: 'h2' // Added for in-memory database
+    implementation group: 'org.springframework.boot', name: 'spring-boot-starter-data-jpa'
+    
+    // Database dependencies
+    runtimeOnly group: 'com.h2database', name: 'h2'
 
+    // OpenAPI documentation (existing)
     implementation group: 'org.springdoc', name: 'springdoc-openapi-starter-webmvc-ui', version: '2.8.9'
 
+    // Logging (existing)
     implementation group: 'com.github.hmcts.java-logging', name: 'logging', version: '6.1.9'
-
     implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: log4JVersion
     implementation group: 'org.apache.logging.log4j', name: 'log4j-to-slf4j', version: log4JVersion
     implementation group: 'ch.qos.logback', name: 'logback-classic', version: logbackVersion
     implementation group: 'ch.qos.logback', name: 'logback-core', version: logbackVersion
 
+    // REST Assured and Lombok (existing)
     implementation group: 'io.rest-assured', name: 'rest-assured'
     implementation group: 'org.projectlombok', name: 'lombok'
     annotationProcessor 'org.projectlombok:lombok'
+    
+    // Enhanced: Add test annotation processor for Lombok
+    testAnnotationProcessor 'org.projectlombok:lombok'
 
+    // Testing dependencies (existing + enhanced)
     testImplementation(platform('org.junit:junit-bom:5.13.4'))
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
     testImplementation group: 'org.springframework.boot', name: 'spring-boot-starter-test', {
         exclude group: 'junit', module: 'junit'
         exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
     }
+    
+    // Enhanced: Additional testing libraries that won't break existing functionality
+    testImplementation group: 'org.assertj', name: 'assertj-core'
+    testImplementation group: 'org.mockito', name: 'mockito-core'
+    testImplementation group: 'org.mockito', name: 'mockito-junit-jupiter'
+    
+    // Enhanced: JSON processing for tests
+    testImplementation group: 'com.fasterxml.jackson.datatype', name: 'jackson-datatype-jsr310'
 }
 
 mainClassName = 'uk.gov.hmcts.reform.dev.Application'
@@ -186,6 +221,22 @@ bootJar {
 
     manifest {
         attributes('Implementation-Version': project.version.toString())
+    }
+}
+
+// Enhanced: Custom task to run all tests (useful for CI/CD)
+task testAll(dependsOn: [test, integration, functional, smoke]) {
+    group = 'verification'
+    description = 'Runs all test suites'
+}
+
+// Enhanced: Development helper task
+task dev {
+    group = 'application'
+    description = 'Runs the application with development profile'
+    dependsOn bootRun
+    doFirst {
+        bootRun.systemProperty 'spring.profiles.active', 'dev'
     }
 }
 
