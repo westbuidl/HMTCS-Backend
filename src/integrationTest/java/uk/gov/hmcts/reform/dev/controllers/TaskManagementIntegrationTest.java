@@ -32,6 +32,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -67,6 +68,7 @@ class TaskManagementIntegrationTest {
         
         // Clear database before each test
         taskRepository.deleteAll();
+        taskRepository.flush(); // Ensure deletion is committed
     }
 
     @Test
@@ -85,6 +87,7 @@ class TaskManagementIntegrationTest {
         mockMvc.perform(post("/api/tasks")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestJson))
+                .andDo(print()) // Add debug output
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", notNullValue()))

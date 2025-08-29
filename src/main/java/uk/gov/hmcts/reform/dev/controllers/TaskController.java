@@ -31,23 +31,33 @@ public class TaskController {
 
     @PostConstruct
     public void init() {
-        taskService.initializeSampleData();
+        // Only initialize sample data if not in test profile
+        if (!isTestProfile()) {
+            taskService.initializeSampleData();
+        }
     }
 
     @PostMapping(produces = "application/json", consumes = "application/json")
     public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request) {
         try {
+            // Enhanced validation
+            if (request == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
             if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
                 return ResponseEntity.badRequest().build();
             }
             
             Task task = taskService.createTask(
-                request.getTitle(),
-                request.getDescription(),
-                request.getStatus(),
+                request.getTitle().trim(),
+                request.getDescription() != null ? request.getDescription().trim() : null,
+                request.getStatus() != null ? request.getStatus() : uk.gov.hmcts.reform.dev.models.TaskStatus.PENDING,
                 request.getDueDate()
             );
             return ResponseEntity.status(HttpStatus.CREATED).body(task);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -55,15 +65,25 @@ public class TaskController {
 
     @GetMapping(value = "/{id}", produces = "application/json")
     public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        Optional<Task> task = taskService.getTaskById(id);
-        return task.map(ResponseEntity::ok)
-                  .orElse(ResponseEntity.notFound().build());
+        try {
+            Optional<Task> task = taskService.getTaskById(id);
+            return task.map(ResponseEntity::ok)
+                      .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @GetMapping(produces = "application/json")
     public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = taskService.getAllTasks();
-        return ResponseEntity.ok(tasks);
+        try {
+            List<Task> tasks = taskService.getAllTasks();
+            return ResponseEntity.ok(tasks);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     @PutMapping(value = "/{id}/status", produces = "application/json", consumes = "application/json")
@@ -71,13 +91,15 @@ public class TaskController {
             @PathVariable Long id, 
             @RequestBody UpdateTaskStatusRequest request) {
         try {
-            if (request.getStatus() == null) {
+            if (request == null || request.getStatus() == null) {
                 return ResponseEntity.badRequest().build();
             }
             
             Optional<Task> updatedTask = taskService.updateTaskStatus(id, request.getStatus());
             return updatedTask.map(ResponseEntity::ok)
                              .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
@@ -85,8 +107,22 @@ public class TaskController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long id) {
-        boolean deleted = taskService.deleteTask(id);
-        return deleted ? ResponseEntity.noContent().build() 
-                      : ResponseEntity.notFound().build();
+        try {
+            boolean deleted = taskService.deleteTask(id);
+            return deleted ? ResponseEntity.noContent().build() 
+                          : ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * Helper method to check if we're running in test profile
+     */
+    private boolean isTestProfile() {
+        String activeProfiles = System.getProperty("spring.profiles.active");
+        return activeProfiles != null && activeProfiles.contains("test");
     }
 }

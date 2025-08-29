@@ -40,7 +40,13 @@ public class TaskService {
             throw new IllegalArgumentException("Task title cannot be null or empty");
         }
         
-        TaskEntity entity = taskMapper.createEntity(title, description, status, dueDate);
+        // Ensure status is not null
+        TaskStatus finalStatus = status != null ? status : TaskStatus.PENDING;
+        
+        TaskEntity entity = taskMapper.createEntity(title.trim(), 
+                                                   description != null ? description.trim() : null, 
+                                                   finalStatus, 
+                                                   dueDate);
         TaskEntity savedEntity = taskRepository.save(entity);
         
         log.info("Task created successfully with ID: {}", savedEntity.getId());
@@ -135,8 +141,8 @@ public class TaskService {
         Optional<TaskEntity> entityOpt = taskRepository.findById(id);
         if (entityOpt.isPresent()) {
             TaskEntity entity = entityOpt.get();
-            entity.setTitle(title);
-            entity.setDescription(description);
+            entity.setTitle(title.trim());
+            entity.setDescription(description != null ? description.trim() : null);
             if (status != null) {
                 entity.setStatus(status);
             }
@@ -216,7 +222,7 @@ public class TaskService {
             return getAllTasks();
         }
         
-        List<TaskEntity> entities = taskRepository.findByTitleOrDescriptionContainingIgnoreCase(searchTerm);
+        List<TaskEntity> entities = taskRepository.findByTitleOrDescriptionContainingIgnoreCase(searchTerm.trim());
         return entities.stream()
                 .map(taskMapper::toModel)
                 .collect(Collectors.toList());
@@ -224,36 +230,44 @@ public class TaskService {
 
     /**
      * Initialize sample data for development/testing
+     * Made more defensive to avoid issues during testing
      */
+    @Transactional
     public void initializeSampleData() {
-        log.info("Checking if sample data initialization is needed");
-        
-        if (taskRepository.count() == 0) {
-            log.info("Initializing sample data");
+        try {
+            log.info("Checking if sample data initialization is needed");
             
-            createTask("Review case documents", 
-                      "Review all submitted documents for case ABC123", 
-                      TaskStatus.PENDING, 
-                      LocalDateTime.now().plusDays(2));
-                      
-            createTask("Schedule hearing", 
-                      "Schedule hearing for case DEF456", 
-                      TaskStatus.IN_PROGRESS, 
-                      LocalDateTime.now().plusDays(5));
-                      
-            createTask("Prepare case summary", 
-                      "Prepare comprehensive case summary for review", 
-                      TaskStatus.COMPLETED, 
-                      LocalDateTime.now().minusDays(1));
-                      
-            createTask("File legal documents", 
-                      "File required legal documents for case GHI789", 
-                      TaskStatus.PENDING, 
-                      LocalDateTime.now().minusDays(1)); // This will be overdue
-            
-            log.info("Sample data initialized successfully");
-        } else {
-            log.debug("Sample data already exists, skipping initialization");
+            long existingTaskCount = taskRepository.count();
+            if (existingTaskCount == 0) {
+                log.info("Initializing sample data");
+                
+                createTask("Review case documents", 
+                          "Review all submitted documents for case ABC123", 
+                          TaskStatus.PENDING, 
+                          LocalDateTime.now().plusDays(2));
+                          
+                createTask("Schedule hearing", 
+                          "Schedule hearing for case DEF456", 
+                          TaskStatus.IN_PROGRESS, 
+                          LocalDateTime.now().plusDays(5));
+                          
+                createTask("Prepare case summary", 
+                          "Prepare comprehensive case summary for review", 
+                          TaskStatus.COMPLETED, 
+                          LocalDateTime.now().minusDays(1));
+                          
+                createTask("File legal documents", 
+                          "File required legal documents for case GHI789", 
+                          TaskStatus.PENDING, 
+                          LocalDateTime.now().minusDays(1)); // This will be overdue
+                
+                log.info("Sample data initialized successfully");
+            } else {
+                log.debug("Sample data already exists ({} tasks), skipping initialization", existingTaskCount);
+            }
+        } catch (Exception e) {
+            log.error("Error during sample data initialization: {}", e.getMessage(), e);
+            // Don't rethrow - sample data initialization should not break the application
         }
     }
 

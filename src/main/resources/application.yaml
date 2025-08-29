@@ -53,6 +53,7 @@ spring:
         jdbc:
           lob:
             non_contextual_creation: true
+    open-in-view: false
   
   # H2 Console (FIXED: Properly configured for access)
   h2:
@@ -81,7 +82,7 @@ task-management:
     show-sql: true
 
 ---
-# Test Profile
+# Test Profile Configuration
 spring:
   config:
     activate:
@@ -91,6 +92,13 @@ spring:
     driver-class-name: org.h2.Driver
     username: sa
     password: password
+    hikari:
+      minimumIdle: 1
+      maximumPoolSize: 5
+      idleTimeout: 10000
+      poolName: TestHikariCP
+      maxLifetime: 7200000
+      connectionTimeout: 30000
   jpa:
     database-platform: org.hibernate.dialect.H2Dialect
     hibernate:
@@ -99,18 +107,46 @@ spring:
     properties:
       hibernate:
         format_sql: false
+    open-in-view: false
   h2:
     console:
       enabled: false
 
 logging:
   level:
-    uk.gov.hmcts.reform.dev: DEBUG
+    uk.gov.hmcts.reform.dev: INFO
     org.hibernate.SQL: ERROR
     org.hibernate.type.descriptor.sql.BasicBinder: ERROR
+    org.springframework.test: WARN
+    org.springframework.web: WARN
 
 task-management:
   sample-data:
-    enabled: true
+    enabled: false  # Disable sample data for tests
   database:
     show-sql: false
+
+---
+# Integration Test Profile Configuration  
+spring:
+  config:
+    activate:
+      on-profile: integration
+  datasource:
+    url: jdbc:h2:mem:integrationdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+  h2:
+    console:
+      enabled: false
+
+task-management:
+  sample-data:
+    enabled: false
