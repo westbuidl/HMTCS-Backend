@@ -119,7 +119,7 @@ public class TaskController {
     }
     
     /**
-     * Helper method to check if we're running in test profile
+     * Helper method
      */
     private boolean isTestProfile() {
         String activeProfiles = System.getProperty("spring.profiles.active");

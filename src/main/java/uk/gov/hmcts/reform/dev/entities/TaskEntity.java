@@ -78,7 +78,7 @@ public class TaskEntity {
         updatedDate = LocalDateTime.now();
     }
     
-    // Custom equals method for testing - compare by content when ID is null
+    
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
